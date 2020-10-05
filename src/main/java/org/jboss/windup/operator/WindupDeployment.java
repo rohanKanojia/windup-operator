@@ -1,12 +1,12 @@
 package org.jboss.windup.operator;
 
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimBuilder;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.QuantityBuilder;
 import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -37,8 +37,8 @@ public class WindupDeployment {
 
     public void deployWindup(WindupResource windupResource) throws InterruptedException {
       List<PersistentVolumeClaim> volumes = createVolumes(windupResource);
-      k8sClient.persistentVolumeClaims().inNamespace(NAMESPACE).createOrReplace(volumes.get(0));
-      k8sClient.persistentVolumeClaims().inNamespace(NAMESPACE).createOrReplace(volumes.get(1));
+      createIfAbsent(k8sClient, volumes.get(0));
+      createIfAbsent(k8sClient, volumes.get(1));
 
       Thread.sleep(10000);
 
@@ -54,14 +54,13 @@ public class WindupDeployment {
 
         List<Ingress> ingresses = createIngresses(windupResource);
         k8sClient.network().ingress().inNamespace(NAMESPACE).createOrReplace(ingresses.get(0));
-        k8sClient.network().ingress().inNamespace(NAMESPACE).createOrReplace(ingresses.get(1));
 
 
         // ContainerBuilder , PodSpecBuilder , PodBuilder
     }
 
     private List<Service> createServices(WindupResource windupResource) {
-        Service mtaWebConsoleSvc = k8sClient.services().createNew()
+        Service mtaWebConsoleSvc = k8sClient.services().createOrReplaceWithNew()
         .withApiVersion("v1")
         .withNewMetadata()
           .withName(windupResource.getSpec().getApplication_name())
@@ -69,12 +68,16 @@ public class WindupDeployment {
           .withAnnotations(Map.of("description", "The web server's http port", "service.alpha.openshift.io/dependencies", "[{\"name\": \"" + windupResource.getSpec().getApplication_name() + "-postgresql\", \"kind\": \"Service\"}]"))
         .endMetadata()
         .withNewSpec()
-          .withPorts(Collections.singletonList(new ServicePort("a", "name", 0, 8080, "", new IntOrString(8080) )))
-          .withSelector(Collections.singletonMap("deploymentConfig", windupResource.getSpec().getApplication_name()))
+                .addNewPort()
+                .withName("name")
+                .withPort(8080)
+                .withTargetPort(new IntOrString(8080))
+                .endPort()
+                .withSelector(Collections.singletonMap("deploymentConfig", windupResource.getSpec().getApplication_name()))
         .endSpec().done();
         LOG.info("Created Service for windup");
 
-        Service postgreSvc = k8sClient.services().createNew()
+        Service postgreSvc = k8sClient.services().createOrReplaceWithNew()
         .withApiVersion("v1")
         .withNewMetadata()
           .withName(windupResource.getSpec().getApplication_name() + "-postgresql")
@@ -82,13 +85,17 @@ public class WindupDeployment {
           .withAnnotations(Map.of("description", "The web server's http port", "service.alpha.openshift.io/dependencies", "[{\"name\": \"" + windupResource.getSpec().getApplication_name() + "-postgresql\", \"kind\": \"Service\"}]"))
         .endMetadata()
         .withNewSpec()
-          .withPorts(new ServicePort("a", "name", 0, 5432, "", new IntOrString(5432) ))
+                .addNewPort()
+                .withName("name2")
+                .withPort(5432)
+                .withTargetPort(new IntOrString(5432))
+                .endPort()
           .withSelector(Collections.singletonMap("deploymentConfig",windupResource.getSpec().getApplication_name() + "-postgresql"))
         .endSpec().done();
         LOG.info("Created Service for postgresql");
 
 
-        Service amqSvc = k8sClient.services().createNew()
+        Service amqSvc = k8sClient.services().createOrReplaceWithNew()
         .withApiVersion("v1")
         .withNewMetadata()
           .withName(windupResource.getSpec().getApplication_name() + "-amq")
@@ -96,13 +103,17 @@ public class WindupDeployment {
           .withAnnotations(Map.of("description", "MTA Master AMQ port."))
         .and()
         .withNewSpec()
-          .withPorts(new ServicePort("a", "name", 0, 61616, "", new IntOrString(61616) ))
+                .addNewPort()
+                .withName("name")
+                .withPort(61616)
+                .withTargetPort(new IntOrString(61616))
+                .endPort()
           .withSelector(Collections.singletonMap("deploymentConfig", windupResource.getSpec().getApplication_name()))
         .and().done();
         LOG.info("Created Service for AMQ");
 
 
-        return List.of(mtaWebConsoleSvc, postgreSvc, postgreSvc);
+        return List.of(mtaWebConsoleSvc, postgreSvc, amqSvc);
     }
 
     private List<Ingress> createIngresses(WindupResource windupResource) {
@@ -403,5 +414,12 @@ public class WindupDeployment {
         LOG.info("Created Deployment for PostgreSQL");
 
         return List.of(deploymentMTAweb, deploymentExecutor, deploymentPostgre);
+    }
+
+    private void createIfAbsent(KubernetesClient k8sClient, HasMetadata item) {
+        HasMetadata itemFromServer = k8sClient.resource(item).inNamespace(NAMESPACE).get();
+        if (itemFromServer == null) {
+            k8sClient.resource(item).inNamespace(NAMESPACE).createOrReplace();
+        }
     }
 }

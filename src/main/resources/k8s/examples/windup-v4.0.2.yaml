@@ -19,3 +19,4 @@ spec:
   docker_images_user: windup3
   docker_images_tag: latest
   max_post_size: "4294967296"
+  hostname_http: "example.com"
