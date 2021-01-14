@@ -24,7 +24,6 @@ import lombok.extern.java.Log;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.windup.operator.model.WindupResource;
-import org.jboss.windup.operator.model.WindupResourceDoneable;
 import org.jboss.windup.operator.model.WindupResourceList;
 
 import java.util.Arrays;
@@ -36,7 +35,7 @@ import java.util.stream.Collectors;
 @Log
 public class WindupDeployment {
 
-  MixedOperation<WindupResource, WindupResourceList, WindupResourceDoneable, Resource<WindupResource, WindupResourceDoneable>> crClient;
+  MixedOperation<WindupResource, WindupResourceList, Resource<WindupResource>> crClient;
 
   KubernetesClient k8sClient;
 
@@ -68,7 +67,7 @@ public class WindupDeployment {
   private String sso_public_key;
   private String ssoPublicKeyDefault;
 
-  public WindupDeployment(WindupResource windupResource, MixedOperation<WindupResource, WindupResourceList, WindupResourceDoneable, Resource<WindupResource, WindupResourceDoneable>> crClient, 
+  public WindupDeployment(WindupResource windupResource, MixedOperation<WindupResource, WindupResourceList, Resource<WindupResource>> crClient,
                           KubernetesClient k8sClient, String namespace, 
                           String serviceAccount, String ssoPublicKeyDefault) {
     this.windupResource = windupResource;

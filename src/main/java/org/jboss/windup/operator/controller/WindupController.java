@@ -3,12 +3,12 @@ package org.jboss.windup.operator.controller;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import lombok.extern.java.Log;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.windup.operator.model.WindupResource;
-import org.jboss.windup.operator.model.WindupResourceDoneable;
 import org.jboss.windup.operator.model.WindupResourceList;
 import org.jboss.windup.operator.util.WindupDeployment;
 
@@ -20,7 +20,7 @@ import javax.inject.Named;
 @ApplicationScoped
 public class WindupController implements Watcher<WindupResource> {
 	@Inject
-	MixedOperation<WindupResource, WindupResourceList, WindupResourceDoneable, Resource<WindupResource, WindupResourceDoneable>> crClient;
+	MixedOperation<WindupResource, WindupResourceList, Resource<WindupResource>> crClient;
 
 	@Named("namespace")
 	String namespace;
@@ -70,7 +70,7 @@ public class WindupController implements Watcher<WindupResource> {
 	}
 
 	@Override
-	public void onClose(KubernetesClientException cause) {
+	public void onClose(WatcherException cause) {
 		if (cause != null) {
 			log.info("on close");
 			cause.printStackTrace();

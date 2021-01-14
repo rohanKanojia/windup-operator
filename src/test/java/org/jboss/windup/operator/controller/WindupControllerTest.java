@@ -12,7 +12,6 @@ import lombok.extern.java.Log;
 import org.awaitility.Awaitility;
 import org.jboss.windup.operator.KubernetesCrudRecorderDispatcher;
 import org.jboss.windup.operator.model.WindupResource;
-import org.jboss.windup.operator.model.WindupResourceDoneable;
 import org.jboss.windup.operator.model.WindupResourceList;
 import org.jboss.windup.operator.model.WindupResourceStatusCondition;
 import org.junit.jupiter.api.Test;
@@ -42,7 +41,7 @@ public class WindupControllerTest {
     KubernetesMockServer server;
 
     @Inject
-    MixedOperation<WindupResource, WindupResourceList, WindupResourceDoneable, Resource<WindupResource, WindupResourceDoneable>> crClient;
+    MixedOperation<WindupResource, WindupResourceList, Resource<WindupResource>> crClient;
 
     @Inject
     KubernetesClient client;

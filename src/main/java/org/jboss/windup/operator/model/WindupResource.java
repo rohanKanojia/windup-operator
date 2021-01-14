@@ -2,7 +2,11 @@ package org.jboss.windup.operator.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.fabric8.kubernetes.api.model.Namespaced;
 import io.fabric8.kubernetes.client.CustomResource;
+import io.fabric8.kubernetes.model.annotation.Group;
+import io.fabric8.kubernetes.model.annotation.Kind;
+import io.fabric8.kubernetes.model.annotation.Version;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,7 +22,10 @@ import java.util.Optional;
 @Getter
 @Setter
 @Log
-public class WindupResource extends CustomResource {
+@Version("v1")
+@Kind("Windup")
+@Group("windup.jboss.org")
+public class WindupResource extends CustomResource<WindupResourceSpec, WindupResourceStatus> implements Namespaced {
   public static final String READY = "Ready";
   public static final String DEPLOYMENT = "Deployment";
 
